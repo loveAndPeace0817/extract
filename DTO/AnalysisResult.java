@@ -24,5 +24,5 @@ public class AnalysisResult {
     @JsonProperty("segment_analysis")
     private List<SegmentAnalysis> segmentAnalysis; // 分段分析
     @JsonProperty("overall_evaluation")
-    private OverallEvaluation overallEvaluation;   // 整体评估
+    private OverallEvaluation overallEvaluation;   // 整体评估 111
 }
