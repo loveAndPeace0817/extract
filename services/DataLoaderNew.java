@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class DataLoaderNew {
     private static final String[] EXPECTED_HEADERS = {
             "profit", "订单号", "holdtime", "日期",
-            "close", "atr", "open", "DonchianHigh", "DonchianLow"
+            "close","进场价格", "atr", "open", "DonchianHigh", "DonchianLow"
     };
 
     public List<OrderTimeSeries> loadFromCsv(String filePath) throws IOException {
@@ -110,6 +110,7 @@ public class DataLoaderNew {
             double[] atr = new double[records.size()];
             double[] TH = new double[records.size()];
             double[] TL = new double[records.size()];
+            double[] inPrice = new double[records.size()];
             String[] orderTime = new String[records.size()];
             for (int i = 0; i < records.size(); i++) {
                 CSVRecord record = records.get(i);
@@ -122,12 +123,13 @@ public class DataLoaderNew {
                     atr[i] = Double.parseDouble(record.get("atr"));
                     TH[i] = Double.parseDouble(record.get("DonchianHigh"));
                     TL[i] = Double.parseDouble(record.get("DonchianLow"));
+                    inPrice[i] = Double.parseDouble(record.get("进场价格"));
                     orderTime[i] = record.get("日期");
                 }
 
             }
 
-            result.add(new OrderTimeSeries(orderId, timestamps, values,close,open,atr,TH,TL,orderTime));
+            result.add(new OrderTimeSeries(orderId, timestamps, values,close,open,atr,TH,TL,orderTime,inPrice));
         }
         return result;
     }

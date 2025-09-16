@@ -37,7 +37,7 @@ public class Main {
         DataLoaderNew loaderNew = new DataLoaderNew();
         //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/欧美收益分仓.csv");
         //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/胡版本阈值0.4明细.csv");
-        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
+        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
         //数据比例
         double testRatio = new Double(0.8);
         Map<String, OrderTimeSeries> enhancedDict = new HashMap<>();//原始长度数据
@@ -80,9 +80,9 @@ public class Main {
 
         // 3. 批量测试
         //List<DecisionResult> results = service.batchTestAllOrders(enhancedDict,enhancedDictLength, testRatio, 3000);//7260
-        List<DecisionResult> results = service.batchTestAllOrdersMHT(enhancedDict,enhancedDictLength, testRatio, 3000);//10030
+        //List<DecisionResult> results = service.batchTestAllOrdersMHT(enhancedDict,enhancedDictLength, testRatio, 3000);//10030
         //List<DecisionResult> results = service.batchTestAllOrdersDTW(enhancedDict,enhancedDictLength, testRatio, 3000);7798
-        //List<DecisionResult> results = service.batchTestAllOrdersPC(enhancedDict,enhancedDictLength, testRatio, 3000);//9077
+        List<DecisionResult> results = service.batchTestAllOrdersPC(enhancedDict,enhancedDictLength, testRatio, 3000);//9077
         //  皮尔逊 黄金（0.63）8164   切比雪夫距离 磅日 0.51 445   曼哈顿距离  欧美 0.55 1399
         //updateDecisions(results,results1);
 
@@ -334,7 +334,7 @@ public class Main {
 
     public static List<zzqdto> getZZQData() throws IOException {
         ZZQDataLoader loaderNew = new ZZQDataLoader();
-        return loaderNew.loadFromCsv("D:/data/章铮奇/gbpjpy_15min.csv");
+        return loaderNew.loadFromCsv("D:/data/章铮奇/xauusd_15min.csv");
     }
 
     /**

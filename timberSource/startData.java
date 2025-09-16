@@ -1,6 +1,8 @@
 package com.demo.extract.timberSource;
 
 import com.demo.extract.DTO.OrderTimeSeries;
+import com.demo.extract.DTO.updateOrderDTO;
+import com.demo.extract.WriteOrder;
 import com.demo.extract.services.DataLoaderNew;
 import com.demo.extract.zzq.ZZQDataLoader;
 import com.demo.extract.zzq.dto.zzqdto;
@@ -9,6 +11,7 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +31,7 @@ public class startData {
         
         // 加载数据
         DataLoaderNew loaderNew = new DataLoaderNew();
-        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/欧美收益分仓.csv");
+        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
         List<zzqdto> zzqData = getZZQData();
         
         // 预处理zzq数据，转换为Map以提高查询效率
@@ -69,34 +72,41 @@ public class startData {
                 orderMap.put(orderTimeSeries.getOrderId(), orderTimeSeries);
             }
         }
-        
+        List<updateOrderDTO> list = new ArrayList<>();
         // 处理结果
         for (String key : orderMap.keySet()) {
             OrderTimeSeries orderTimeSeries = orderMap.get(key);
             Integer step = orderTimeSeries.getStep();
             if (step!= null &&  orderTimeSeries.getClose().length > step) {
                 double openPrice = orderTimeSeries.getClose()[step];//获取最佳步数价格
-                System.out.println("id="+orderTimeSeries.getOrderId()+"方向" + orderTimeSeries.getAction()+"真实价格="+orderTimeSeries.getOpen()[0]+"推荐价格=="+openPrice);
+                System.out.println("id="+orderTimeSeries.getOrderId()+"方向：" + orderTimeSeries.getAction()+" 真实价格="+orderTimeSeries.getInPrice()[0]+" 推荐价格=="+openPrice);
+
+                updateOrderDTO dto = new updateOrderDTO();
+                dto.setOrderId(Integer.valueOf(orderTimeSeries.getOrderId()));
+                //dto.setEndPrice(close);
+                dto.setStartPrice(openPrice);
+                dto.setAction(orderTimeSeries.getAction());
+                list.add(dto);
 
                 if(!StringUtils.isEmpty(orderTimeSeries.getAction()) && "多".equals(orderTimeSeries.getAction())){
                     if(orderTimeSeries.getOpen()[0] > openPrice){
                         ycount++;
-                        double abs = Math.abs(orderTimeSeries.getOpen()[0] - openPrice);
+                        double abs = Math.abs(orderTimeSeries.getInPrice()[0] - openPrice);
                         yamount += abs;
                     }else {
                         ncount++;
-                        double abs = Math.abs(orderTimeSeries.getOpen()[0] - openPrice);
+                        double abs = Math.abs(orderTimeSeries.getInPrice()[0] - openPrice);
                         namount += abs;
                     }
                 }
                 if(!StringUtils.isEmpty(orderTimeSeries.getAction()) && "空".equals(orderTimeSeries.getAction())){
                     if( openPrice > orderTimeSeries.getOpen()[0]){
                         ycount++;
-                        double abs = Math.abs(orderTimeSeries.getOpen()[0] - openPrice);
+                        double abs = Math.abs(orderTimeSeries.getInPrice()[0] - openPrice);
                         yamount += abs;
                     }else {
                         ncount++;
-                        double abs = Math.abs(orderTimeSeries.getOpen()[0] - openPrice);
+                        double abs = Math.abs(orderTimeSeries.getInPrice()[0] - openPrice);
                         namount += abs;
                     }
                 }
@@ -106,6 +116,14 @@ public class startData {
         System.out.println("错误数量"+ncount);
         System.out.println("正确amount"+yamount);
         System.out.println("错误amount"+namount);
+
+
+
+        WriteOrder w  = new WriteOrder();
+        w.updateJBPJPYOrders(list);
+
+
+
         // 记录结束时间
         long endTime = System.currentTimeMillis();
         System.out.println("程序运行时间: " + (endTime - startTime) + "ms");
@@ -211,7 +229,7 @@ public class startData {
 
     public static List<zzqdto> getZZQData() throws IOException {
         ZZQDataLoader loaderNew = new ZZQDataLoader();
-        return loaderNew.loadFromCsv("D:/data/章铮奇/eurusd_15min.csv");
+        return loaderNew.loadFromCsv("D:/data/章铮奇/gbpjpy_15min.csv");
     }
 
     public double getOpenPrice(OrderTimeSeries orderTimeSeries, List<zzqdto> zzqdtos) {

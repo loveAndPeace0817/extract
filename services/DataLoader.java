@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * 健壮的CSV数据加载器（修复BOM和编码问题）
  */
 public class DataLoader {
-    private static final String[] EXPECTED_HEADERS = {"收益", "订单号", "持仓时间","日期", "close", "atr","open","DonchianHigh","DonchianLow"};
+    private static final String[] EXPECTED_HEADERS = {"收益", "订单号", "持仓时间","日期", "close","进场价格", "atr","open","DonchianHigh","DonchianLow"};
     private static final byte[] UTF8_BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
 
     /**
@@ -135,9 +135,6 @@ public class DataLoader {
         List<OrderTimeSeries> result = new ArrayList<>();
         for (Map.Entry<String, List<CSVRecord>> entry : recordsByOrder.entrySet()) {
             String orderId = entry.getKey();
-            if(orderId.equals("1311")){
-                System.out.println(888);
-            }
             List<CSVRecord> records = entry.getValue();
 
             double[] timestamps = new double[records.size()];
@@ -147,6 +144,7 @@ public class DataLoader {
             double[] atr = new double[records.size()];
             double[] TH = new double[records.size()];
             double[] TL = new double[records.size()];
+            double[] inPrice = new double[records.size()];
             String[] orderTime = new String[records.size()];
             for (int i = 0; i < records.size(); i++) {
                 CSVRecord record = records.get(i);
@@ -159,12 +157,13 @@ public class DataLoader {
                     atr[i] = Double.parseDouble(record.get("atr"));
                     TH[i] = Double.parseDouble(record.get("DonchianHigh"));
                     TL[i] = Double.parseDouble(record.get("DonchianLow"));
+                    inPrice[i] = Double.parseDouble(record.get("进场价格"));
                     orderTime[i] = record.get("日期");
                 }
 
             }
 
-            result.add(new OrderTimeSeries(orderId, timestamps, values,close,open,atr,TH,TL,orderTime));
+            result.add(new OrderTimeSeries(orderId, timestamps, values,close,open,atr,TH,TL,orderTime,inPrice));
         }
         return result;
     }

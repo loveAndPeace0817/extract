@@ -35,7 +35,8 @@ public class OrderTimeSeries {
     private Boolean targetOrder = false;
     private String action;//多空方向
     private Integer step;//最佳入场step
-    public OrderTimeSeries(String orderId, double[] timestamps, double[] values,double[] close,double[] open,double[] atr,double[]TH,double[]TL,String[] valueTime) {
+    private  double[] inPrice;//唐安琪通道下轨
+    public OrderTimeSeries(String orderId, double[] timestamps, double[] values,double[] close,double[] open,double[] atr,double[]TH,double[]TL,String[] valueTime,double[] inPrice) {
         if (timestamps == null || values == null) {
             throw new IllegalArgumentException("时间和收益数组不能为null");
         }
@@ -51,6 +52,7 @@ public class OrderTimeSeries {
         this.TH = Arrays.copyOf(TH, TH.length);
         this.TL = Arrays.copyOf(TL,TL.length);
         this.valueTime = valueTime;
+        this.inPrice = Arrays.copyOf(inPrice,inPrice.length);
     }
 
     /**

@@ -38,7 +38,7 @@ public class WriteOrder {
 
 
     public void updateData( Map<String,Double> updateData){
-        String filePath = "D:/data/高胜率/黄金最大胜率版 - 副本.xlsx"; // Excel文件路径
+        String filePath = "D:/data/高胜率/镑日最大胜率版 - 副本.xlsx"; // Excel文件路径
 
         try {
             // 1. 从Excel文件读取交易记录
@@ -64,7 +64,7 @@ public class WriteOrder {
 
     public void updateAllOrders( List<updateOrderDTO> mergedList){
 
-        String filePath = "D:/data/高胜率/镑日最大胜率版 - 副本.xlsx"; // Excel文件路径
+        String filePath = "D:/data/高胜率/黄金最大胜率版 - 副本.xlsx"; // Excel文件路径
 
         try {
             // 1. 从Excel文件读取交易记录
@@ -79,11 +79,95 @@ public class WriteOrder {
                     double lots = map.get(updateOrderDTO.getOrderId()).getLots();
 
 
-                    Double xauusdProfit = getJBPJPYProfit(updateOrderDTO.getStartPrice(), updateOrderDTO.getEndPrice(), updateOrderDTO.getAction(), lots);
+                    Double xauusdProfit = getXAUUSDProfit(updateOrderDTO.getStartPrice(), updateOrderDTO.getEndPrice(), updateOrderDTO.getAction(), lots);
 
 
 
                     updateProfitForOrder.updateProfitForOrder(records, updateOrderDTO.getOrderId(), xauusdProfit);
+                    // 3. 将修改后的记录写回Excel文件
+                    CsvWriter.writeRecordsToExcel(records, filePath);
+
+                    System.out.println("交易记录已成功更新并保存到Excel文件: " + filePath);
+                }
+
+
+            }
+
+
+        } catch (  IOException e) {
+            System.err.println("处理Excel文件时出错: " + e.getMessage());
+        }
+
+    }
+
+
+    public void updateEURUSDOrders( List<updateOrderDTO> mergedList){
+
+        String filePath = "D:/data/高胜率/欧美69胜率 - 副本.xlsx"; // Excel文件路径
+
+        try {
+            // 1. 从Excel文件读取交易记录
+            List<TradeRecord> records = CsvWriter.readRecordsFromExcel(filePath);
+            Map<Integer,TradeRecord> map = new HashMap<>();
+            for (TradeRecord tradeRecord: records){
+                if(tradeRecord.getType().equals("close")){
+                    map.put(tradeRecord.getOrderId(),tradeRecord);
+                }
+
+            }
+
+            for (updateOrderDTO updateOrderDTO:mergedList){
+                if(map.get(updateOrderDTO.getOrderId()) != null){
+                    TradeRecord tradeRecord = map.get(updateOrderDTO.getOrderId());
+                    double lots = tradeRecord.getLots();
+                    updateOrderDTO.setEndPrice(tradeRecord.getPrice());
+                    Double eurusdProfit = getEURUSDProfit(updateOrderDTO.getStartPrice(), updateOrderDTO.getEndPrice(), updateOrderDTO.getAction(), lots);
+
+
+
+                    updateProfitForOrder.updateProfitForOrder(records, updateOrderDTO.getOrderId(), eurusdProfit);
+                    // 3. 将修改后的记录写回Excel文件
+                    CsvWriter.writeRecordsToExcel(records, filePath);
+
+                    System.out.println("交易记录已成功更新并保存到Excel文件: " + filePath);
+                }
+
+
+            }
+
+
+        } catch (  IOException e) {
+            System.err.println("处理Excel文件时出错: " + e.getMessage());
+        }
+
+    }
+
+
+    public void updateJBPJPYOrders( List<updateOrderDTO> mergedList){
+
+        String filePath = "D:/data/高胜率/镑日最大胜率版 - 副本.xlsx"; // Excel文件路径
+
+        try {
+            // 1. 从Excel文件读取交易记录
+            List<TradeRecord> records = CsvWriter.readRecordsFromExcel(filePath);
+            Map<Integer,TradeRecord> map = new HashMap<>();
+            for (TradeRecord tradeRecord: records){
+                if(tradeRecord.getType().equals("close")){
+                    map.put(tradeRecord.getOrderId(),tradeRecord);
+                }
+
+            }
+
+            for (updateOrderDTO updateOrderDTO:mergedList){
+                if(map.get(updateOrderDTO.getOrderId()) != null){
+                    TradeRecord tradeRecord = map.get(updateOrderDTO.getOrderId());
+                    double lots = tradeRecord.getLots();
+                    updateOrderDTO.setEndPrice(tradeRecord.getPrice());
+                    Double eurusdProfit = getJBPJPYProfit(updateOrderDTO.getStartPrice(), updateOrderDTO.getEndPrice(), updateOrderDTO.getAction(), lots);
+
+
+
+                    updateProfitForOrder.updateProfitForOrder(records, updateOrderDTO.getOrderId(), eurusdProfit);
                     // 3. 将修改后的记录写回Excel文件
                     CsvWriter.writeRecordsToExcel(records, filePath);
 
