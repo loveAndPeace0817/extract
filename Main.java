@@ -11,6 +11,7 @@ import com.demo.extract.model.DecisionResult;
 import com.demo.extract.services.DataLoader;
 import com.demo.extract.services.DataLoaderNew;
 import com.demo.extract.services.SimilarityService;
+import com.demo.extract.timberSource.updateGBPJPY;
 import com.demo.extract.util.CsvWriter;
 import com.demo.extract.zzq.ZZQDataLoader;
 import com.demo.extract.zzq.dto.zzqdto;
@@ -35,9 +36,9 @@ public class Main {
         // 1. 加载数据
         DataLoader loader = new DataLoader();
         DataLoaderNew loaderNew = new DataLoaderNew();
-        //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/欧美收益分仓.csv");
-        //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/胡版本阈值0.4明细.csv");
-        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
+
+        //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
+        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
         //数据比例
         double testRatio = new Double(0.8);
         Map<String, OrderTimeSeries> enhancedDict = new HashMap<>();//原始长度数据
@@ -80,18 +81,22 @@ public class Main {
 
         // 3. 批量测试
         //List<DecisionResult> results = service.batchTestAllOrders(enhancedDict,enhancedDictLength, testRatio, 3000);//7260
-        //List<DecisionResult> results = service.batchTestAllOrdersMHT(enhancedDict,enhancedDictLength, testRatio, 3000);//10030
+        List<DecisionResult> results = service.batchTestAllOrdersMHT(enhancedDict,enhancedDictLength, testRatio, 3000);//10030
         //List<DecisionResult> results = service.batchTestAllOrdersDTW(enhancedDict,enhancedDictLength, testRatio, 3000);7798
-        List<DecisionResult> results = service.batchTestAllOrdersPC(enhancedDict,enhancedDictLength, testRatio, 3000);//9077
+        //List<DecisionResult> results = service.batchTestAllOrdersPC(enhancedDict,enhancedDictLength, testRatio, 3000);//9077
         //  皮尔逊 黄金（0.63）8164   切比雪夫距离 磅日 0.51 445   曼哈顿距离  欧美 0.55 1399
         //updateDecisions(results,results1);
 
         // 4. 打印汇总结果
-        //printSummary(results);
+        printSummary(results);
 
         //5.掐头去尾
-        Map<String, OrderTimeSeries> odMap = getODMap(allSeries);
-        updateAllOrders(results,odMap,enhancedDict);
+        //Map<String, OrderTimeSeries> odMap = getODMap(allSeries);
+        //updateAllOrders(results,odMap,enhancedDict);
+
+        //6.专门处理镑日
+        //updateGBPJPY up = new updateGBPJPY();
+        //up.mergeList(results,enhancedDict);
 
         service.shutdown();
     }

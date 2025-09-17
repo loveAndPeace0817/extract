@@ -162,7 +162,10 @@ public class WriteOrder {
                 if(map.get(updateOrderDTO.getOrderId()) != null){
                     TradeRecord tradeRecord = map.get(updateOrderDTO.getOrderId());
                     double lots = tradeRecord.getLots();
-                    updateOrderDTO.setEndPrice(tradeRecord.getPrice());
+                    if(updateOrderDTO.getEndPrice() == null || updateOrderDTO.getEndPrice() == 0.0){
+                        updateOrderDTO.setEndPrice(tradeRecord.getPrice());
+                    }
+
                     Double eurusdProfit = getJBPJPYProfit(updateOrderDTO.getStartPrice(), updateOrderDTO.getEndPrice(), updateOrderDTO.getAction(), lots);
 
 
@@ -232,12 +235,14 @@ public class WriteOrder {
         Double result=0.00;
         if(action.equals("多")){
             // 1. 减法：a - b
-            double s1 = (double) Math.round((endPrice / 143.00) * 100) / 100;
-            double e1 = (double) Math.round((startPrice / 143.00) * 100) / 100;
+            double s1 = (double) Math.round((endPrice / 143.00) * 1000) / 1000;
+            double e1 = (double) Math.round((startPrice / 143.00) * 1000) / 1000;
 
             BigDecimal subtractResult = BigDecimal.valueOf(s1).subtract(BigDecimal.valueOf(e1));
             // 2. 乘法：结果 * multiplier
-            BigDecimal finalResult = subtractResult.multiply(BigDecimal.valueOf(lots)).multiply(new BigDecimal(100000));
+            BigDecimal finalResult = subtractResult.multiply(BigDecimal.valueOf(lots));
+
+            finalResult = finalResult.multiply(new BigDecimal(100000));
 
             // 3. 保留 2 位小数（四舍五入）
             result = finalResult.setScale(2, RoundingMode.HALF_UP).doubleValue();
