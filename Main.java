@@ -11,6 +11,7 @@ import com.demo.extract.model.DecisionResult;
 import com.demo.extract.services.DataLoader;
 import com.demo.extract.services.DataLoaderNew;
 import com.demo.extract.services.SimilarityService;
+import com.demo.extract.timberSource.fourHoursXAUUSD;
 import com.demo.extract.timberSource.updateGBPJPY;
 import com.demo.extract.util.CsvWriter;
 import com.demo.extract.zzq.ZZQDataLoader;
@@ -39,6 +40,22 @@ public class Main {
 
         //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
         List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
+
+
+
+        // 按 60% 比例分片
+        int splitIndex = (int) (allSeries.size() * 0.5);
+
+        List<OrderTimeSeries> firstPart = allSeries.stream()
+                .limit(splitIndex)
+                .collect(Collectors.toList());
+
+        List<OrderTimeSeries> secondPart = allSeries.stream()
+                .skip(splitIndex)
+                .collect(Collectors.toList());
+
+
+
         //数据比例
         double testRatio = new Double(0.8);
         Map<String, OrderTimeSeries> enhancedDict = new HashMap<>();//原始长度数据
@@ -81,9 +98,9 @@ public class Main {
 
         // 3. 批量测试
         //List<DecisionResult> results = service.batchTestAllOrders(enhancedDict,enhancedDictLength, testRatio, 3000);//7260
-        List<DecisionResult> results = service.batchTestAllOrdersMHT(enhancedDict,enhancedDictLength, testRatio, 3000);//10030
+        //List<DecisionResult> results = service.batchTestAllOrdersMHT(enhancedDict,enhancedDictLength, testRatio, 3000);//10030
         //List<DecisionResult> results = service.batchTestAllOrdersDTW(enhancedDict,enhancedDictLength, testRatio, 3000);7798
-        //List<DecisionResult> results = service.batchTestAllOrdersPC(enhancedDict,enhancedDictLength, testRatio, 3000);//9077
+        List<DecisionResult> results = service.batchTestAllOrdersPC(enhancedDict,enhancedDictLength, testRatio, 3000);//9077
         //  皮尔逊 黄金（0.63）8164   切比雪夫距离 磅日 0.51 445   曼哈顿距离  欧美 0.55 1399
         //updateDecisions(results,results1);
 
@@ -97,6 +114,10 @@ public class Main {
         //6.专门处理镑日
         //updateGBPJPY up = new updateGBPJPY();
         //up.mergeList(results,enhancedDict);
+
+        //7.专门处理黄金
+        //fourHoursXAUUSD f = new fourHoursXAUUSD();
+        //f.mergeList(results,enhancedDict);
 
         service.shutdown();
     }
@@ -150,8 +171,8 @@ public class Main {
         System.out.println("不辅助订单金额"+yb);
         System.out.println("辅助订单金额"+yb1);
         System.out.println("理想目标辅助订单金额"+yb2);
-        WriteOrder w  = new WriteOrder();
-        w.updateData(updateData);
+        //WriteOrder w  = new WriteOrder();
+       // w.updateData(updateData);
 
     }
 

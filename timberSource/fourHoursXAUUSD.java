@@ -34,7 +34,7 @@ public class fourHoursXAUUSD {
 
         // 加载数据
         DataLoaderNew loaderNew = new DataLoaderNew();
-        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
+        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
         List<zzqdto> zzqData = getZZQData();
 
         // 预处理zzq数据，转换为Map以提高查询效率
@@ -85,13 +85,14 @@ public class fourHoursXAUUSD {
         for (String key : orderMap.keySet()) {
             OrderTimeSeries orderTimeSeries = orderMap.get(key);
             Integer step = orderTimeSeries.getStep();
+            double[] close = orderTimeSeries.getClose();
             if (step!= null &&  orderTimeSeries.getClose().length > step) {
                 double openPrice = orderTimeSeries.getClose()[step];//获取最佳步数价格
                 System.out.println("id="+orderTimeSeries.getOrderId()+"方向：" + orderTimeSeries.getAction()+" 真实价格="+orderTimeSeries.getInPrice()[0]+" 推荐价格=="+openPrice);
 
                 updateOrderDTO dto = new updateOrderDTO();
                 dto.setOrderId(Integer.valueOf(orderTimeSeries.getOrderId()));
-                //dto.setEndPrice(close);
+                dto.setEndPrice(close[close.length-1]);
                 dto.setStartPrice(openPrice);
                 dto.setAction(orderTimeSeries.getAction());
                 list.add(dto);
@@ -127,8 +128,8 @@ public class fourHoursXAUUSD {
         }
 
 
-        // WriteOrder w  = new WriteOrder();
-        // w.updateJBPJPYOrders(list);
+         WriteOrder w  = new WriteOrder();
+         w.updateJBPJPYOrders(list);
 
         System.out.println("正确数量"+ycount);
         System.out.println("错误数量"+ncount);
@@ -146,7 +147,7 @@ public class fourHoursXAUUSD {
 
     public static List<zzqdto> getZZQData() throws IOException {
         ZZQDataLoader loaderNew = new ZZQDataLoader();
-        return loaderNew.loadFromCsv("D:/data/章铮奇/xauusd_4h.csv");
+        return loaderNew.loadFromCsv("D:/data/章铮奇/gbpjpy_4h.csv");
     }
 
     /**
@@ -333,7 +334,7 @@ public class fourHoursXAUUSD {
 
 
         WriteOrder w  = new WriteOrder();
-        w.updateJBPJPYOrders(mergedList);
+        w.updateAllOrders(mergedList);
     }
 
 
@@ -353,4 +354,6 @@ public class fourHoursXAUUSD {
 
         return -1; // 未找到返回-1
     }
+
+
 }

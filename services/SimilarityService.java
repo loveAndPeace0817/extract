@@ -406,6 +406,99 @@ public class SimilarityService {
         // 5. 评估决策
         return evaluateDecision(targetOrderId, enhancedDict, similarOrders);
     }
+
+
+
+    public void getExtract(List<String> orderIds, Map<String, OrderTimeSeries> enhancedDictLength,double testRatio,OrderTimeSeries target){
+
+        List<OrderFeatures> features = new ArrayList<>(); // 1. 提取特征(收益)
+        List<OrderFeatures> featuresClose = new ArrayList<>(); //1-1 提取特征(close)
+        List<OrderFeatures> featuresOpen = new ArrayList<>(); //1-1 提取特征(close)
+        List<OrderFeatures> featuresAtr = new ArrayList<>(); //1-1 提取特征(close)
+        List<OrderFeatures> featuresTH = new ArrayList<>(); //1-1 提取特征(close)
+        List<OrderFeatures> featuresTL = new ArrayList<>(); //1-1 提取特征(close)
+
+        for(String id : orderIds){
+            OrderTimeSeries orderTimeSeries = enhancedDictLength.get(id);
+            OrderFeatures time = featureService.extractFeatures(orderTimeSeries, 1);
+            features.add(time);
+            OrderFeatures close = featureService.extractFeatures(orderTimeSeries, 2);
+            featuresClose.add(close);
+            OrderFeatures open = featureService.extractFeatures(orderTimeSeries, 3);
+            featuresOpen.add(open);
+            OrderFeatures atr = featureService.extractFeatures(orderTimeSeries, 4);
+            featuresAtr.add(atr);
+            OrderFeatures th = featureService.extractFeatures(orderTimeSeries, 5);
+            featuresTH.add(th);
+            OrderFeatures tl = featureService.extractFeatures(orderTimeSeries, 6);
+            featuresTL.add(tl);
+        }
+
+
+        // 2. 标准化特征（收益）
+        double[][] featureMatrix = features.stream()
+                .map(this::convertToArray)
+                .toArray(double[][]::new);
+        double[][] scaledFeatures = scaler.standardize(featureMatrix);
+
+        // 2-1. 标准化特征（收益） 5.添加因子步骤 标准化
+        double[][] featureMatrixClose = featuresClose.stream()
+                .map(this::convertToArray)
+                .toArray(double[][]::new);
+        double[][] scaledFeaturesClose = scaler.preprocessClosePrices(featureMatrixClose);
+
+        // 2-1. 标准化特征（收益）
+        double[][] featureMatrixOpen = featuresOpen.stream()
+                .map(this::convertToArray)
+                .toArray(double[][]::new);
+        double[][] scaledFeaturesOpen = scaler.preprocessClosePrices(featureMatrixOpen);
+
+        // 2-1. 标准化特征（收益）
+        double[][] featureMatrixAtr = featuresAtr.stream()
+                .map(this::convertToArray)
+                .toArray(double[][]::new);
+        double[][] scaledFeaturesAtr = scaler.preprocessClosePrices(featureMatrixAtr);
+
+        // 2-1. 标准化特征（收益）
+        double[][] featureMatrixTH = featuresTH.stream()
+                .map(this::convertToArray)
+                .toArray(double[][]::new);
+        double[][] scaledFeaturesTH = scaler.preprocessClosePrices(featureMatrixTH);
+
+        // 2-1. 标准化特征（收益）
+        double[][] featureMatrixTL = featuresTL.stream()
+                .map(this::convertToArray)
+                .toArray(double[][]::new);
+        double[][] scaledFeaturesTL = scaler.preprocessClosePrices(featureMatrixTL);
+
+
+
+        // 3. 计算相似度(收益)
+        double[] mhtDistances = computePCDistances(target, enhancedDictLength, orderIds, testRatio,1);
+        // 3.1 计算相似度(close)6.添加因子步骤 计算相似度
+        double[] mhtDistancesClose = computePCDistances(target, enhancedDictLength, orderIds, testRatio,2);
+
+        double[] mhtDistancesOpen = computePCDistances(target, enhancedDictLength, orderIds, testRatio,3);
+
+        double[] mhtDistancesAtr = computePCDistances(target, enhancedDictLength, orderIds, testRatio,4);
+
+        double[] mhtDistancesTH = computePCDistances(target, enhancedDictLength, orderIds, testRatio,5);
+
+        double[] mhtDistancesTL = computePCDistances(target, enhancedDictLength, orderIds, testRatio,6);
+
+
+
+        double[][] cosineSim = new CosineSimilarity().compute(scaledFeatures);
+        double[][] cosineSimClose = new CosineSimilarity().compute(scaledFeaturesClose);
+        double[][] cosineSimOpen = new CosineSimilarity().compute(scaledFeaturesOpen);
+        double[][] cosineSimAtr = new CosineSimilarity().compute(scaledFeaturesAtr);
+        double[][] cosineSimTH = new CosineSimilarity().compute(scaledFeaturesTH);
+        double[][] cosineSimTL = new CosineSimilarity().compute(scaledFeaturesTL);
+
+    }
+
+
+
     private DecisionResult evaluateOrderDTW(
             String targetOrderId,
             Map<String, OrderTimeSeries> enhancedDict,Map<String, OrderTimeSeries> enhancedDictLength,
