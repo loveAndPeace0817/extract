@@ -38,21 +38,9 @@ public class Main {
         DataLoader loader = new DataLoader();
         DataLoaderNew loaderNew = new DataLoaderNew();
 
-        //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
-        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
+        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
+        //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
 
-
-
-        // 按 60% 比例分片
-        int splitIndex = (int) (allSeries.size() * 0.5);
-
-        List<OrderTimeSeries> firstPart = allSeries.stream()
-                .limit(splitIndex)
-                .collect(Collectors.toList());
-
-        List<OrderTimeSeries> secondPart = allSeries.stream()
-                .skip(splitIndex)
-                .collect(Collectors.toList());
 
 
 

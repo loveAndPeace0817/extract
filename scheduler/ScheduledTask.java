@@ -5,6 +5,7 @@ import com.demo.extract.model.DecisionResult;
 import com.demo.extract.services.DataLoaderNew;
 import com.demo.extract.services.SimilarityService;
 import com.demo.extract.util.CsvWriter;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
+@Service
 public class ScheduledTask {
     // 存储增强数据的字典
     private static Map<String, OrderTimeSeries> enhancedDict = new HashMap<>();
@@ -51,10 +52,13 @@ public class ScheduledTask {
             System.out.println("执行定时任务: " + new Date());
 
             // 1. 读取CSV文件
-            String csvFilePath = "D:/MT4Default/MQL4/Files/data.csv"; // 请替换为实际的CSV文件路径
+            String csvFilePath = "C:/Users/Administrator/AppData/Roaming/MetaQuotes/Terminal/Common/Files/黄金收益持仓.csv"; // 请替换为实际的CSV文件路径  镑日收益持仓
+            //String csvFilePath = "C:/Users/Administrator/AppData/Roaming/MetaQuotes/Terminal/Common/Files/镑日收益持仓.csv"; // 请替换为实际的CSV文件路径  镑日收益持仓
+
 
             DataLoaderNew loaderNew = new DataLoaderNew();
-            List<OrderTimeSeries> newOrders = loaderNew.loadFromCsv(csvFilePath);
+            List<OrderTimeSeries> newOrders1 = loaderNew.loadFromCsv(csvFilePath);
+            List<OrderTimeSeries> newOrders = getLatestOrderByValueTime(newOrders1);
 
             if (newOrders.isEmpty()) {
                 System.out.println("没有读取到新的订单数据");
@@ -64,12 +68,17 @@ public class ScheduledTask {
                 System.out.println("目标订单数量不对");
                 return;
             }
-            if(targetIdsSet.contains(newOrders.get(0).getOrderId()+tar)){
+            /*if(targetIdsSet.contains(newOrders.get(0).getOrderId()+tar)){
                 System.out.println("已经预测过此订单"+newOrders.get(0).getOrderId());
                 return;
-            }
+            }*/
             for (OrderTimeSeries orderTimeSeries :newOrders ){
+                if(orderTimeSeries.getValueTime().length < 40){
+                    System.out.println("目标订单持仓时间不足");
+                    return;
+                }
                 targetIdsSet.add(orderTimeSeries.getOrderId()+tar);
+
             }
 
             // 2. 更新增强字典
@@ -87,35 +96,43 @@ public class ScheduledTask {
         }
     }
 
+
+
     /**
-     * 读取CSV文件内容
+     * 执行定时任务
      */
-    private static List<OrderTimeSeries> readCsvFile(String filePath) throws IOException {
-        List<OrderTimeSeries> orders = new ArrayList<>();
+    public  String executeTaskPublic(List<OrderTimeSeries> newOrders) {
+        try {
+            System.out.println("执行任务: " + new Date());
 
-        // 检查文件是否存在
-        if (!Files.exists(Paths.get(filePath))) {
-            System.err.println("CSV文件不存在: " + filePath);
-            return orders;
-        }
 
-        // 使用DataLoader读取CSV文件（假设DataLoader有类似的方法）
-        // 这里假设DataLoader有一个readOrderTimeSeries方法
-        DataLoaderNew loaderNew = new DataLoaderNew();
-        orders = loaderNew.loadFromCsv("D:/data/测试777.csv");
-
-        // 数据长度校验
-        List<OrderTimeSeries> validOrders = new ArrayList<>();
-        for (OrderTimeSeries order : orders) {
-            if (order.getValues() != null && order.getValues().length >= 40) {
-                validOrders.add(order);
-            } else {
-                System.out.println("订单 " + order.getOrderId() + " 数据长度不足40，已忽略");
+            if (newOrders.isEmpty()) {
+                System.out.println("没有读取到新的订单数据");
+                return "-1";
             }
-        }
+            if(newOrders.size()>1){
+                System.out.println("目标订单数量不对");
+                return "-1";
+            }
+            for (OrderTimeSeries orderTimeSeries :newOrders ){
+                targetIdsSet.add(orderTimeSeries.getOrderId()+tar);
+            }
 
-        return validOrders;
+            // 2. 更新增强字典
+            updateEnhancedDicts(newOrders);
+
+            // 3. 运行批量测试
+            String result = runBatchTestPublic();
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("任务执行失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return "-1";
     }
+
+
 
     /**
      * 更新增强字典
@@ -140,8 +157,29 @@ public class ScheduledTask {
         // 假设BatchTester有一个batchTestAllOrders方法
         // 并假设该方法会将结果存入results字典
         SimilarityService service = new SimilarityService(4);
-        results = service.batchTestAllOrdersMHT(enhancedDict, enhancedDictLength,0.9,3000);
-        System.out.println("批量测试完成，共处理 " + results.size() + " 个订单");
+        results = service.batchTestAllOrdersPC(enhancedDict, enhancedDictLength,0.9,3000);
+        for(DecisionResult decisionResult:results){
+            if(decisionResult.getOrderId().contains(tar)){
+                System.out.println(decisionResult.getDecision());
+            }
+        }
+    }
+
+
+    /**
+     * 运行批量测试
+     */
+    private static String runBatchTestPublic() {
+        // 假设BatchTester有一个batchTestAllOrders方法
+        // 并假设该方法会将结果存入results字典
+        SimilarityService service = new SimilarityService(4);
+        results = service.batchTestAllOrdersPC(enhancedDict, enhancedDictLength,0.9,3000);
+        for(DecisionResult decisionResult:results){
+            if(decisionResult.getOrderId().contains(tar)){
+                return decisionResult.getDecision();
+            }
+        }
+        return "-1";
     }
 
     /**
@@ -150,7 +188,7 @@ public class ScheduledTask {
     private static void outputResultsToCsv() throws IOException {
         // 生成结果文件路径
         String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-        String outputFilePath = "results/EURUSD_" + timestamp + ".csv";
+        String outputFilePath = "C:/Users/Administrator/AppData/Roaming/MetaQuotes/Terminal/Common/Files/特征XAUUSD.csv";
 
         // 确保结果目录存在
         File resultsDir = new File("results");
@@ -168,9 +206,9 @@ public class ScheduledTask {
         for (DecisionResult decisionResult : results) {
             if(decisionResult.getTargetOrder()){
                 ids.add(decisionResult.getOrderId().replace(tar,""));
-                currencyPairs.add("EURUSD");
+                currencyPairs.add("XAUUSD.PRO");
                 operations.add(decisionResult.getDecision()); // 假设DecisionResult有getDecision方法
-
+                //operations.add("close"); // 假设DecisionResult有getDecision方法
             }
 
         }
@@ -183,7 +221,8 @@ public class ScheduledTask {
 
     public static void initMaps() throws IOException {
         DataLoaderNew loaderNew = new DataLoaderNew();
-        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/测试777.csv");
+        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
+        //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
         for(OrderTimeSeries orderTimeSeries:allSeries){
             if(orderTimeSeries.getValues().length>=70){
                 enhancedDict.put(orderTimeSeries.getOrderId(),orderTimeSeries);
@@ -199,7 +238,7 @@ public class ScheduledTask {
                 double[] tl = orderTimeSeries.getTL();
                 String[] valueTime = orderTimeSeries.getValueTime();
 
-                int endIndex = (int)(values.length * 0.9);     // 计算80%位置
+                int endIndex = (int)(values.length * 0.8);     // 计算80%位置
                 lengthOrder.setValues( Arrays.copyOfRange(values, 0, endIndex));
                 lengthOrder.setTimestamps(Arrays.copyOfRange(timestamps, 0, endIndex));
                 lengthOrder.setOrderId(orderTimeSeries.getOrderId());
@@ -215,4 +254,152 @@ public class ScheduledTask {
 
         }
     }
+
+    public  void initMapsPublic() throws IOException {
+        DataLoaderNew loaderNew = new DataLoaderNew();
+        List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/黄金收益分仓.csv");
+        //List<OrderTimeSeries> allSeries = loaderNew.loadFromCsv("D:/data/高胜率/镑日分仓收益.csv");
+        for(OrderTimeSeries orderTimeSeries:allSeries){
+            if(orderTimeSeries.getValues().length>=70){
+                enhancedDict.put(orderTimeSeries.getOrderId(),orderTimeSeries);
+
+                OrderTimeSeries lengthOrder = new OrderTimeSeries();
+                double[] values = orderTimeSeries.getValues();
+                double[] timestamps = orderTimeSeries.getTimestamps();
+
+                double[] close = orderTimeSeries.getClose();//2.添加因子步骤  new 属性
+                double[] open = orderTimeSeries.getOpen();
+                double[] atr = orderTimeSeries.getAtr();
+                double[] th = orderTimeSeries.getTH();
+                double[] tl = orderTimeSeries.getTL();
+                String[] valueTime = orderTimeSeries.getValueTime();
+
+                int endIndex = (int)(values.length * 0.8);     // 计算80%位置
+                lengthOrder.setValues( Arrays.copyOfRange(values, 0, endIndex));
+                lengthOrder.setTimestamps(Arrays.copyOfRange(timestamps, 0, endIndex));
+                lengthOrder.setOrderId(orderTimeSeries.getOrderId());
+
+                lengthOrder.setClose(Arrays.copyOfRange(close, 0, endIndex));//3.添加因子步骤 属性注入
+                lengthOrder.setOpen(Arrays.copyOfRange(open, 0, endIndex));
+                lengthOrder.setAtr(Arrays.copyOfRange(atr, 0, endIndex));
+                lengthOrder.setTH(Arrays.copyOfRange(th, 0, endIndex));
+                lengthOrder.setTL(Arrays.copyOfRange(tl, 0, endIndex));
+                lengthOrder.setValueTime(Arrays.copyOfRange(valueTime, 0, endIndex));
+                enhancedDictLength.put(orderTimeSeries.getOrderId(),lengthOrder);
+            }
+
+        }
+    }
+
+    /**
+     * 获取List<OrderTimeSeries>中valueTime第一个索引时间最大的对象，并放入新集合
+     * @param newOrders 原始订单时间序列集合
+     * @return 包含最新OrderTimeSeries对象的集合
+     */
+    public static List<OrderTimeSeries> getLatestOrderByValueTime(List<OrderTimeSeries> newOrders) {
+        List<OrderTimeSeries> result = new ArrayList<>();
+
+        if (newOrders == null || newOrders.isEmpty()) {
+            return result;
+        }
+        int maxIndex = 0; // 假设第一个元素是最大的
+        Date maxDate = parseDateTime(newOrders.get(0).getValueTime()[0]);
+
+        for (int i = 1; i < newOrders.size(); i++) {
+            String[] valueTime = newOrders.get(i).getValueTime();
+            if (valueTime == null || valueTime.length == 0) {
+                continue; // 跳过无效数据
+            }
+
+            Date currentDate = parseDateTime(valueTime[0]);
+            if (currentDate == null) {
+                continue; // 跳过无法解析的时间
+            }
+
+            if (maxDate == null || currentDate.after(maxDate)) {
+                maxDate = currentDate;
+                maxIndex = i;
+            }
+        }
+        result.add(newOrders.get(maxIndex));
+        return result;
+    }
+
+
+    /**
+     * 获取List<OrderTimeSeries>中valueTime第一个索引时间最大的对象，并放入新集合
+     * @param newOrders 原始订单时间序列集合
+     * @return 包含最新OrderTimeSeries对象的集合
+     */
+    public  List<OrderTimeSeries> getLatestOrderByValueTimePublic(List<OrderTimeSeries> newOrders) {
+        List<OrderTimeSeries> result = new ArrayList<>();
+
+        if (newOrders == null || newOrders.isEmpty()) {
+            return result;
+        }
+        int maxIndex = 0; // 假设第一个元素是最大的
+        Date maxDate = parseDateTime(newOrders.get(0).getValueTime()[0]);
+
+        for (int i = 1; i < newOrders.size(); i++) {
+            String[] valueTime = newOrders.get(i).getValueTime();
+            if (valueTime == null || valueTime.length == 0) {
+                continue; // 跳过无效数据
+            }
+
+            Date currentDate = parseDateTime(valueTime[0]);
+            if (currentDate == null) {
+                continue; // 跳过无法解析的时间
+            }
+
+            if (maxDate == null || currentDate.after(maxDate)) {
+                maxDate = currentDate;
+                maxIndex = i;
+            }
+        }
+        result.add(newOrders.get(maxIndex));
+        return result;
+    }
+
+    /**
+     * 解析时间字符串为Date对象，尝试多种常见格式
+     * @param timeStr 时间字符串
+     * @return 解析后的Date对象，失败返回null
+     */
+    private static Date parseDateTime(String timeStr) {
+        // 尝试多种日期格式
+        String[] formats = {
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy.MM.dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm",
+                "yyyy.MM.dd HH:mm",
+                "yyyy/MM/dd HH:mm:ss",
+                "yyyy/MM/dd HH:mm"
+        };
+
+        for (String format : formats) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(format);
+                // 保留严格模式，但添加日志以调试解析问题
+                sdf.setLenient(false);
+                Date date = sdf.parse(timeStr);
+                return date;
+            } catch (Exception e) {
+                // 尝试下一种格式
+            }
+        }
+        
+        // 如果所有格式都失败，尝试宽松模式作为备选
+        for (String format : formats) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(format);
+                sdf.setLenient(true);
+                return sdf.parse(timeStr);
+            } catch (Exception e) {
+                // 继续尝试下一种格式
+            }
+        }
+
+        return null;
+    }
+
 }
